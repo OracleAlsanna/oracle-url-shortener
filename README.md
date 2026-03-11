@@ -94,9 +94,8 @@ oracle-url-shortener/
 
 When a URL is shortened, `oracle` randomly selects a name from a curated
 pool of characters, bosses, and NPCs drawn from FromSoftware titles including
-Dark Souls I–III, Bloodborne, Elden Ring, Elden Ring Nightreign, Sekiro, and
-Demon's Souls. If the selected name is already taken, a new one is chosen at
-random until a free name is found.
+Dark Souls I–III, Bloodborne, Elden Ring, Sekiro, and Demon's Souls. 
+If the selected name is already taken, a new one is chosen at random until a free name is found.
 
 ---
 
