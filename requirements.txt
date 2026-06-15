@@ -1,0 +1,3 @@
+# oracle has no third-party runtime dependencies.
+# All libraries used (sqlite3, hashlib, argparse, pathlib) are part of the
+# Python 3.10+ standard library.
