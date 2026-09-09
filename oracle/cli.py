@@ -1,5 +1,6 @@
 import argparse
 import sys
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
 from oracle import db, shortener
@@ -30,15 +31,41 @@ def cmd_create(args: argparse.Namespace) -> None:
         print(f"Already exists: oracle/{existing['code']}")
         return
 
-    code = shortener.generate_code(db.code_exists)
-    row = db.insert(code, url)
+    if args.code:
+        try:
+            shortener.validate_custom_code(args.code)
+        except ValueError as e:
+            print(f"Error: {e}")
+            sys.exit(1)
+        if db.code_exists(args.code):
+            print(f"Error: code '{args.code}' is already taken.")
+            sys.exit(1)
+        code = args.code
+    else:
+        code = shortener.generate_code(db.code_exists)
+
+    expires_at = None
+    if args.expires_in is not None:
+        if args.expires_in <= 0:
+            print("Error: --expires-in must be a positive number of hours.")
+            sys.exit(1)
+        expires_at = (
+            datetime.now(timezone.utc) + timedelta(hours=args.expires_in)
+        ).isoformat()
+
+    row = db.insert(code, url, expires_at=expires_at)
     print(f"Shortened: oracle/{row['code']}")
+    if expires_at:
+        print(f"Expires at: {expires_at}")
 
 
 def cmd_get(args: argparse.Namespace) -> None:
     row = db.get_by_code(args.code)
     if not row:
         print(f"Error: No entry found for code '{args.code}'")
+        sys.exit(1)
+    if row["expires_at"] and datetime.now(timezone.utc) > datetime.fromisoformat(row["expires_at"]):
+        print(f"Error: code '{args.code}' has expired.")
         sys.exit(1)
     print(f"{row['code']}  ->  {row['original_url']}")
 
@@ -92,6 +119,13 @@ def build_parser() -> argparse.ArgumentParser:
     # create
     p_create = subparsers.add_parser("create", help="Shorten a URL")
     p_create.add_argument("url", help="The URL to shorten")
+    p_create.add_argument(
+        "--code", default=None, help="Use a custom code instead of a random one (3-20 alphanumeric characters)"
+    )
+    p_create.add_argument(
+        "--expires-in", type=int, default=None, metavar="HOURS",
+        help="Expire the link after this many hours",
+    )
     p_create.set_defaults(func=cmd_create)
 
     # get

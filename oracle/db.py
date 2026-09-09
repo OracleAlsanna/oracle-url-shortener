@@ -15,7 +15,7 @@ def _connect() -> sqlite3.Connection:
 
 
 def init_db() -> None:
-    """Create the links table if it does not exist."""
+    """Create the links table if it does not exist, and migrate in any new columns."""
     with _connect() as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS links (
@@ -25,6 +25,15 @@ def init_db() -> None:
                 created_at  TEXT    NOT NULL
             )
         """)
+        _migrate_add_column(conn, "links", "expires_at", "TEXT")
+        _migrate_add_column(conn, "links", "password_hash", "TEXT")
+
+
+def _migrate_add_column(conn: sqlite3.Connection, table: str, column: str, coltype: str) -> None:
+    """Add a column to an existing table if it isn't already present. Safe to call every startup."""
+    existing = {row["name"] for row in conn.execute(f"PRAGMA table_info({table})")}
+    if column not in existing:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {coltype}")
 
 
 def get_by_url(url: str) -> Optional[sqlite3.Row]:
@@ -48,13 +57,13 @@ def code_exists(code: str) -> bool:
     return get_by_code(code) is not None
 
 
-def insert(code: str, url: str) -> sqlite3.Row:
+def insert(code: str, url: str, expires_at: Optional[str] = None) -> sqlite3.Row:
     """Insert a new link and return the created row."""
     created_at = datetime.now(timezone.utc).isoformat()
     with _connect() as conn:
         conn.execute(
-            "INSERT INTO links (code, original_url, created_at) VALUES (?, ?, ?)",
-            (code, url, created_at),
+            "INSERT INTO links (code, original_url, created_at, expires_at) VALUES (?, ?, ?, ?)",
+            (code, url, created_at, expires_at),
         )
     return get_by_code(code)
 

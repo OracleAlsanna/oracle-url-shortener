@@ -34,7 +34,7 @@ The database is created automatically on first run at `~/.oracle/db.sqlite3`.
 
 ## Commands
 
-### `oracle create <url>`
+### `oracle create <url> [--code CODE] [--expires-in HOURS]`
 Shorten a URL. Prints the assigned code.
 If the URL was already shortened, returns the existing code instead of
 creating a duplicate.
@@ -45,6 +45,21 @@ Shortened: oracle/X7K2
 
 $ oracle create https://www.example.com/some/very/long/path?query=value
 Already exists: oracle/X7K2
+```
+
+Use `--code` to choose a custom code instead of a random one (3-20 alphanumeric characters):
+
+```
+$ oracle create https://example.com --code mylink
+Shortened: oracle/mylink
+```
+
+Use `--expires-in` to set the link to expire after a number of hours:
+
+```
+$ oracle create https://example.com --expires-in 24
+Shortened: oracle/K3F1
+Expires at: 2026-09-10T18:00:00+00:00
 ```
 
 ### `oracle get <code>`
